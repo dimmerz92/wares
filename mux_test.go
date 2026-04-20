@@ -3,6 +3,7 @@ package wares_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/dimmerz92/wares"
@@ -53,6 +54,83 @@ func TestServeMux(t *testing.T) {
 
 			mux := wares.NewServeMux()
 			mux.HandleFunc("/", h, test.middleware...)
+			mux.ServeHTTP(w, r)
+
+			if got := w.Body.String(); got != test.expected {
+				t.Errorf("expected %s, got %s", test.expected, got)
+			}
+		}
+	})
+
+	t.Run("Use", func(t *testing.T) {
+		t.Run("used once", func(t *testing.T) {
+			for _, test := range tests {
+				w := httptest.NewRecorder()
+				r := httptest.NewRequest("GET", "/", nil)
+
+				mux := wares.NewServeMux()
+				mux.Use(test.middleware...)
+				mux.HandleFunc("/", h)
+				mux.ServeHTTP(w, r)
+
+				if got := w.Body.String(); got != test.expected {
+					t.Errorf("expected %s, got %s", test.expected, got)
+				}
+			}
+		})
+
+		t.Run("used twice", func(t *testing.T) {
+			for _, test := range tests {
+				w := httptest.NewRecorder()
+				r := httptest.NewRequest("GET", "/", nil)
+
+				mux := wares.NewServeMux()
+				mux.Use(test.middleware...)
+				mux.Use(test.middleware...)
+				mux.HandleFunc("/", h)
+				mux.ServeHTTP(w, r)
+
+				if got := w.Body.String(); got != strings.TrimSuffix(test.expected, "h")+test.expected {
+					t.Errorf("expected %s, got %s", strings.TrimSuffix(test.expected, "h")+test.expected, got)
+				}
+			}
+		})
+
+		t.Run("use once before and once after request", func(t *testing.T) {
+			for _, test := range tests {
+				w := httptest.NewRecorder()
+				r := httptest.NewRequest("GET", "/", nil)
+
+				mux := wares.NewServeMux()
+				mux.Use(test.middleware...)
+				mux.HandleFunc("/", h)
+				mux.ServeHTTP(w, r)
+
+				if got := w.Body.String(); got != test.expected {
+					t.Errorf("expected %s, got %s", test.expected, got)
+				}
+
+				w = httptest.NewRecorder()
+				r = httptest.NewRequest("GET", "/", nil)
+
+				mux.Use(test.middleware...)
+				mux.ServeHTTP(w, r)
+
+				if got := w.Body.String(); got != strings.TrimSuffix(test.expected, "h")+test.expected {
+					t.Errorf("expected %s, got %s", strings.TrimSuffix(test.expected, "h")+test.expected, got)
+				}
+			}
+		})
+	})
+
+	t.Run("Group", func(t *testing.T) {
+		for _, test := range tests {
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/grouped/test", nil)
+
+			mux := wares.NewServeMux()
+			group := mux.Group("/grouped")
+			group.HandleFunc("GET /test", h, test.middleware...)
 			mux.ServeHTTP(w, r)
 
 			if got := w.Body.String(); got != test.expected {
