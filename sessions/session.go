@@ -29,14 +29,14 @@ type session struct {
 
 // Session contains the data and state for the current Session.
 type Session struct {
-	data session
+	data *session
 }
 
 // NewSession returns a new instance of a Session.
 // This session is not set in the context or the session store.
 func NewSession(lifetime, expiry time.Time) *Session {
 	return &Session{
-		data: session{
+		data: &session{
 			ID:       auth.GenerateURLSafeNonce(32),
 			Data:     make(map[string]any),
 			Status:   StatusUnchanged,
