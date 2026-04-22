@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -68,6 +69,13 @@ func (s *Session) SetStatus(status SessionStatus) {
 	s.data.Status = status
 }
 
+// Initial returns true if this is the session has never been used.
+func (s *Session) Initial() bool {
+	s.data.mu.RLock()
+	defer s.data.mu.RUnlock()
+	return s.data.Initial
+}
+
 // Lifetime returns the absolute time at which the session will end.
 func (s *Session) Lifetime() time.Time {
 	s.data.mu.RLock()
@@ -106,6 +114,7 @@ func (s *Session) SetValue(key string, value any) {
 	}
 
 	s.data.Data[key] = value
+	s.data.Initial = false
 
 	if s.data.Status != StatusRotate && s.data.Status != StatusShouldRotate {
 		s.data.Status = StatusChanged
@@ -145,4 +154,10 @@ func (s *Session) Destroy() {
 	s.data.mu.Lock()
 	defer s.data.mu.Unlock()
 	s.data.Status = StatusDestroy
+}
+
+// GetSession retrieves the session from the context if it exists.
+func GetSession(ctx context.Context, key string) (*Session, bool) {
+	session, ok := ctx.Value(key).(*Session)
+	return session, ok
 }

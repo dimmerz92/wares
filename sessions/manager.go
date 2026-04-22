@@ -5,15 +5,12 @@ import (
 	"errors"
 	"maps"
 	"time"
-
-	"github.com/dimmerz92/wares/auth"
 )
 
 var ErrNilSession = errors.New("nil session")
 
 // SessionManager manages session lifecycles using a SessionStore backend.
 type SessionManager struct {
-	ctxKey          string
 	encoder         Encoder
 	store           SessionStore
 	lifetime        time.Duration
@@ -23,16 +20,6 @@ type SessionManager struct {
 
 // SessionManagerOption provides a functional way to configure the SessionManager on construction.
 type SessionManagerOption func(*SessionManager)
-
-// WithContextKey sets the context key to be used when setting the session into the request context.
-// Defaults to a randomly generated string. Blank strings will be ignored and the default used.
-func WithContextKey(key string) SessionManagerOption {
-	return func(sm *SessionManager) {
-		if key != "" {
-			sm.ctxKey = key
-		}
-	}
-}
 
 // WithEncoder sets the encoder used to serialise data prior to storage.
 // Defaults to a GobEncoder. Nil values will be ignored and the default used.
@@ -79,7 +66,6 @@ func WithRotateThreshold(d time.Duration) SessionManagerOption {
 // NewSessionManager creates a new instance of a SessionManager with the given config options or defaults.
 //
 // Defaults:
-//   - context key: random string
 //   - encoder: gob based encoding
 //   - store: none
 //   - lifetime: 24 hours
@@ -87,7 +73,6 @@ func WithRotateThreshold(d time.Duration) SessionManagerOption {
 //   - rotate threshold: 2 minutes
 func NewSessionManager(opts ...SessionManagerOption) *SessionManager {
 	manager := &SessionManager{
-		ctxKey:          auth.GenerateURLSafeNonce(16),
 		lifetime:        24 * time.Hour,
 		rotateThreshold: 2 * time.Minute,
 	}
