@@ -1,4 +1,4 @@
-package sessions
+package middleware
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/dimmerz92/wares"
 	"github.com/dimmerz92/wares/auth"
+	"github.com/dimmerz92/wares/sessions"
 )
 
 // CookieConfig holds the configured cookie settings for the session cookie middleware.
@@ -30,9 +31,9 @@ type CookieConfig struct {
 type CookieResponseWriter struct {
 	http.ResponseWriter
 	config  *CookieConfig
-	manager *SessionManager
+	manager *sessions.SessionManager
 	request *http.Request
-	session *Session
+	session *sessions.Session
 	failed  bool
 	once    sync.Once
 }
@@ -98,7 +99,7 @@ func WithSkipper(f func(r *http.Request) bool) CookieOption {
 	}
 }
 
-func SessionCookies(manager *SessionManager, opts ...CookieOption) wares.MiddlewareFunc {
+func SessionCookies(manager *sessions.SessionManager, opts ...CookieOption) wares.MiddlewareFunc {
 	config := &CookieConfig{
 		CtxKey:   auth.GenerateURLSafeNonce(16),
 		HttpOnly: true,
@@ -130,7 +131,7 @@ func SessionCookies(manager *SessionManager, opts ...CookieOption) wares.Middlew
 				return
 			}
 
-			var session *Session
+			var session *sessions.Session
 			switch cookie, err := r.Cookie(config.Name); err {
 			case nil:
 				var ok bool
@@ -212,12 +213,12 @@ func (crw *CookieResponseWriter) SetCookie() {
 	}
 
 	switch crw.session.GetStatus() {
-	case StatusDestroy:
+	case sessions.StatusDestroy:
 		cookie.MaxAge = -1
 		cookie.Expires = time.Unix(0, 0)
 
 	default:
-		if crw.session.Initial() && crw.session.GetStatus() == StatusUnchanged {
+		if crw.session.Initial() && crw.session.GetStatus() == sessions.StatusUnchanged {
 			return
 		}
 

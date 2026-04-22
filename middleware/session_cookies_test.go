@@ -1,4 +1,4 @@
-package sessions_test
+package middleware_test
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dimmerz92/wares/middleware"
 	"github.com/dimmerz92/wares/sessions"
 	"github.com/dimmerz92/wares/sessions/memorystore"
 )
@@ -20,10 +21,10 @@ func TestSessionCookies(t *testing.T) {
 	manager := sessions.NewSessionManager(sessions.WithStore(store))
 	defer store.Stop()
 
-	middleware := sessions.SessionCookies(
+	middleware := middleware.SessionCookies(
 		manager,
-		sessions.WithName(cookieName),
-		sessions.WithContextKey(ctxKey),
+		middleware.WithName(cookieName),
+		middleware.WithContextKey(ctxKey),
 	)
 
 	t.Run("session not used, no cookie", func(t *testing.T) {
