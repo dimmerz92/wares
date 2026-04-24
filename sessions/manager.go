@@ -189,8 +189,10 @@ func (sm *SessionManager) Commit(ctx context.Context, session *Session) error {
 		fallthrough
 
 	default:
-		if session.data.Status == StatusUnchanged && sm.idleTimeout == 0 {
-			return nil
+		if session.data.Status == StatusUnchanged {
+			if session.data.Initial || sm.idleTimeout == 0 {
+				return nil
+			}
 		}
 
 		err := sm.SetSession(ctx, session)
